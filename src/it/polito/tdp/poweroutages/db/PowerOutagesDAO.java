@@ -9,7 +9,7 @@ import java.util.List;
 
 import it.polito.tdp.poweroutages.model.Nerc;
 
-public class PowerOutageDAO {
+public class PowerOutagesDAO {
 
 	public List<Nerc> getNercList() {
 
