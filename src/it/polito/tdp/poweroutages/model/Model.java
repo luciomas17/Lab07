@@ -12,6 +12,7 @@ public class Model {
 	PowerOutagesDAO podao;
 	private List<PowerOutage> powerOutages;
 	private List<PowerOutage> best;
+	private int totPeopleAffected;
 	
 	public Model() {
 		podao = new PowerOutagesDAO();
@@ -24,25 +25,26 @@ public class Model {
 	public List<PowerOutage> findWorstCase(int nercId, int x, int y) {
 		List<PowerOutage> parziale = new ArrayList<PowerOutage>();
 		this.best = new ArrayList<PowerOutage>();
+		totPeopleAffected = 0;
 		
 		powerOutages = podao.getPowerOutagesListByNerc(nercId);
 		
-		recursive(parziale, 0, x, y);
+		recursive(parziale, x, y);
 	
 		return best;
 	}
 	
-	private void recursive(List<PowerOutage> parziale, int level, int x, int y) {
-		if(best == null || countPeopleAffected(best) < countPeopleAffected(parziale)) {
+	private void recursive(List<PowerOutage> parziale, int x, int y) {
+		if(totPeopleAffected <= countPeopleAffected(parziale)) {
 			best = new ArrayList<PowerOutage>(parziale);
-			return;
+			totPeopleAffected = countPeopleAffected(parziale);
 		}
-		
+			
 		for(PowerOutage prova : powerOutages) {
 			if(!parziale.contains(prova)) {
-				if(countYears(parziale, prova) <= x && countHours(parziale, prova) <= y) {
+				if(countYears(parziale) <= x && countHours(parziale) <= y) {
 					parziale.add(prova);
-					recursive(parziale, level+1, x, y);
+					recursive(parziale, x, y);
 					parziale.remove(parziale.size()-1);
 				}
 			}
@@ -54,25 +56,24 @@ public class Model {
 		
 		for(PowerOutage po : parziale)
 			count += po.getCustomersAffected();
+		
 		return count;
 	}
 
-	private int countHours(List<PowerOutage> parziale, PowerOutage prova) {
+	private int countHours(List<PowerOutage> parziale) {
 		int count = 0;
 		
-		if(parziale.size() > 0) {
+		if(parziale.size() >= 2) {
 			for(PowerOutage po : parziale)
-				count += Duration.between(po.getDateEventBegan(), po.getDateEventFinished()).getSeconds()/3600;
+				count += (int)(Duration.between(po.getDateEventBegan(), po.getDateEventFinished()).getSeconds()/3600);
 		}
-		
-		count += Duration.between(prova.getDateEventBegan(), prova.getDateEventFinished()).getSeconds()/3600;
 		
 		return count;
 	}
 
-	private int countYears(List<PowerOutage> parziale, PowerOutage prova) {
-		if(parziale.size() > 0)
-			return Period.between(parziale.get(0).getDateEventBegan().toLocalDate(), prova.getDateEventBegan().toLocalDate()).getYears();
+	private int countYears(List<PowerOutage> parziale) {
+		if(parziale.size() >= 2)
+			return Period.between(parziale.get(0).getDateEventBegan().toLocalDate(), parziale.get(parziale.size()-1).getDateEventBegan().toLocalDate()).getYears();
 		else
 			return 0;
 	}
